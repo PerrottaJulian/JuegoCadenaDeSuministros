@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Lock, Package, DollarSign, AlertCircle, Clock, CheckCircle2, TrendingDown, TrendingUp, Info } from "lucide-react";
+import { Lock, Package, DollarSign, AlertCircle, Clock, CheckCircle2, TrendingDown, TrendingUp, Info, Truck } from "lucide-react";
 import { format } from "date-fns";
 
 export default function PlayerDashboard({ role }: { role: PlayerRole }) {
