@@ -6,6 +6,12 @@ import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 
+const ROLE_LABELS: Record<string, string> = {
+  retailer: "Minorista",
+  wholesaler: "Mayorista",
+  factory: "Fábrica",
+};
+
 export default function Home() {
   const queryClient = useQueryClient();
   const { data: gameState, isLoading } = useGetGameState({
@@ -25,7 +31,7 @@ export default function Home() {
   }
 
   if (!gameState) {
-    return <div>Failed to load game state</div>;
+    return <div>Error al cargar el estado del juego</div>;
   }
 
   const handleReset = () => {
@@ -56,10 +62,10 @@ export default function Home() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-4xl font-mono font-bold tracking-tight text-foreground uppercase">
-            Operations War Room
+            Centro de Operaciones
           </h1>
           <p className="text-muted-foreground mt-2 font-mono text-sm">
-            Monitor and coordinate the global supply chain network
+            Monitorea y coordina la red global de cadena de suministro
           </p>
         </div>
         
@@ -72,16 +78,16 @@ export default function Home() {
             data-testid="button-reset-game"
           >
             <RotateCcw className={cn("mr-2 h-4 w-4", resetGame.isPending && "animate-spin")} />
-            INITIALIZE REBOOT
+            REINICIAR PARTIDA
           </Button>
         </div>
       </div>
 
       {gameState.isGameOver && (
         <div className="bg-primary/20 border border-primary p-6 rounded-lg text-center font-mono">
-          <h2 className="text-2xl font-bold text-primary mb-2">SIMULATION COMPLETE</h2>
+          <h2 className="text-2xl font-bold text-primary mb-2">SIMULACIÓN COMPLETADA</h2>
           <p className="text-muted-foreground">
-            Winner: <span className={getRoleColor(gameState.winnerRole || '')}>{gameState.winnerRole?.toUpperCase()}</span>
+            Ganador: <span className={getRoleColor(gameState.winnerRole || '')}>{ROLE_LABELS[gameState.winnerRole ?? ''] ?? gameState.winnerRole?.toUpperCase()}</span>
           </p>
         </div>
       )}
@@ -101,16 +107,16 @@ export default function Home() {
                 </div>
                 {gameState.currentTurnRole === player.role && (
                   <Badge className="bg-primary hover:bg-primary text-primary-foreground font-mono">
-                    ACTIVE TURN
+                    TURNO ACTIVO
                   </Badge>
                 )}
               </div>
-              <CardTitle className="text-2xl font-mono uppercase mt-4">{player.role}</CardTitle>
+              <CardTitle className="text-2xl font-mono uppercase mt-4">{ROLE_LABELS[player.role] ?? player.role}</CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground font-mono uppercase">Stock Level</p>
+                  <p className="text-xs text-muted-foreground font-mono uppercase">Nivel de Stock</p>
                   <p className="text-2xl font-mono font-medium flex items-center gap-2">
                     {player.stock} 
                     {player.stock < 5 && <AlertTriangle className="h-4 w-4 text-destructive" />}
@@ -123,13 +129,13 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground font-mono uppercase">Backlog</p>
+                  <p className="text-xs text-muted-foreground font-mono uppercase">Pedidos Pendientes</p>
                   <p className="text-2xl font-mono font-medium text-destructive">
                     {player.backlog}
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground font-mono uppercase">Total Costs</p>
+                  <p className="text-xs text-muted-foreground font-mono uppercase">Costos Totales</p>
                   <p className="text-2xl font-mono font-medium text-muted-foreground">
                     ${player.totalHoldingCost + player.totalStockoutCost}
                   </p>
@@ -139,7 +145,7 @@ export default function Home() {
               <div className="mt-8">
                 <Link href={`/${player.role}`} className="w-full">
                   <Button className="w-full font-mono uppercase group" variant={gameState.currentTurnRole === player.role ? "default" : "secondary"}>
-                    Access Terminal
+                    Acceder a Terminal
                     <TrendingUp className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </Button>
                 </Link>
@@ -150,7 +156,7 @@ export default function Home() {
       </div>
 
       <div className="mt-12 bg-card border border-border p-6 rounded-lg">
-        <h3 className="text-lg font-mono font-bold mb-6 text-foreground uppercase tracking-wider">Supply Chain Flow</h3>
+        <h3 className="text-lg font-mono font-bold mb-6 text-foreground uppercase tracking-wider">Flujo de Cadena de Suministro</h3>
         <div className="flex items-center justify-between px-8 relative">
           <div className="absolute top-1/2 left-16 right-16 h-0.5 bg-border -translate-y-1/2 z-0" />
           
@@ -158,24 +164,24 @@ export default function Home() {
             <div className="h-12 w-12 rounded-full border-2 border-chart-1 text-chart-1 flex items-center justify-center bg-background">
               <Package className="h-6 w-6" />
             </div>
-            <span className="mt-2 font-mono text-sm font-bold text-chart-1">RETAILER</span>
-            <span className="text-xs text-muted-foreground font-mono mt-1">Consumer Demand</span>
+            <span className="mt-2 font-mono text-sm font-bold text-chart-1">MINORISTA</span>
+            <span className="text-xs text-muted-foreground font-mono mt-1">Demanda del Consumidor</span>
           </div>
 
           <div className="relative z-10 flex flex-col items-center bg-card px-4">
             <div className="h-12 w-12 rounded-full border-2 border-chart-2 text-chart-2 flex items-center justify-center bg-background">
               <Truck className="h-6 w-6" />
             </div>
-            <span className="mt-2 font-mono text-sm font-bold text-chart-2">WHOLESALER</span>
-            <span className="text-xs text-muted-foreground font-mono mt-1">Distribution</span>
+            <span className="mt-2 font-mono text-sm font-bold text-chart-2">MAYORISTA</span>
+            <span className="text-xs text-muted-foreground font-mono mt-1">Distribución</span>
           </div>
 
           <div className="relative z-10 flex flex-col items-center bg-card px-4">
             <div className="h-12 w-12 rounded-full border-2 border-chart-3 text-chart-3 flex items-center justify-center bg-background">
               <Factory className="h-6 w-6" />
             </div>
-            <span className="mt-2 font-mono text-sm font-bold text-chart-3">FACTORY</span>
-            <span className="text-xs text-muted-foreground font-mono mt-1">Production</span>
+            <span className="mt-2 font-mono text-sm font-bold text-chart-3">FÁBRICA</span>
+            <span className="text-xs text-muted-foreground font-mono mt-1">Producción</span>
           </div>
         </div>
       </div>

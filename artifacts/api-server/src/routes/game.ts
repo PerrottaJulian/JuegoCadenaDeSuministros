@@ -190,7 +190,7 @@ router.post("/turns/advance", async (req, res) => {
     await db.insert(gameEventsTable).values({
       role: "retailer",
       type: "demand",
-      message: `Customer demand for Day ${nextDay}: ${demand} units.`,
+      message: `Demanda del cliente para el Día ${nextDay}: ${demand} unidades.`,
       day: nextDay,
       acknowledged: false,
       data: { demand },
@@ -279,7 +279,7 @@ router.post("/turns/process-arrivals", async (req, res) => {
       .values({
         role,
         type: "arrival",
-        message: `${totalArrived} units arrived. Stock updated to ${remaining}.`,
+        message: `${totalArrived} unidades llegaron. Stock actualizado a ${remaining}.`,
         day: gs.currentDay,
         acknowledged: false,
         data: { arrived: totalArrived, newStock: remaining },
@@ -293,7 +293,7 @@ router.post("/turns/process-arrivals", async (req, res) => {
     .values({
       role,
       type: "cost",
-      message: `Holding cost charged: $${holdingCost.toFixed(2)} (${remaining} units × $${HOLDING_COST_PER_UNIT}).`,
+      message: `Costo de almacenamiento cobrado: $${holdingCost.toFixed(2)} (${remaining} unidades × $${HOLDING_COST_PER_UNIT}).`,
       day: gs.currentDay,
       acknowledged: false,
       data: { holdingCost, units: remaining },
@@ -398,7 +398,7 @@ router.post("/orders", async (req, res) => {
     await db.insert(gameEventsTable).values({
       role: supplierRole,
       type: "order_received",
-      message: `${fromRole} ordered ${quantity} units. Estimated delivery: Day ${estimatedArrivalDay}.`,
+      message: `${fromRole} solicitó ${quantity} unidades. Entrega estimada: Día ${estimatedArrivalDay}.`,
       day: gs.currentDay,
       acknowledged: false,
       data: { fromRole, quantity, estimatedArrivalDay },

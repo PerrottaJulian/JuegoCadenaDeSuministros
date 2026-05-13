@@ -3,6 +3,12 @@ import { Activity, LayoutDashboard, BarChart3, Settings, Package, Truck, Factory
 import { cn } from "@/lib/utils";
 import { useGetGameState, getGetGameStateQueryKey } from "@workspace/api-client-react";
 
+const ROLE_LABELS: Record<string, string> = {
+  retailer: "Minorista",
+  wholesaler: "Mayorista",
+  factory: "Fábrica",
+};
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { data: gameState } = useGetGameState({
@@ -10,11 +16,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
   });
 
   const navItems = [
-    { href: "/", label: "Operations HQ", icon: LayoutDashboard },
-    { href: "/retailer", label: "Retailer", icon: Package, role: "retailer" },
-    { href: "/wholesaler", label: "Wholesaler", icon: Truck, role: "wholesaler" },
-    { href: "/factory", label: "Factory", icon: Factory, role: "factory" },
-    { href: "/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/", label: "Centro Ops.", icon: LayoutDashboard },
+    { href: "/retailer", label: "Minorista", icon: Package, role: "retailer" },
+    { href: "/wholesaler", label: "Mayorista", icon: Truck, role: "wholesaler" },
+    { href: "/factory", label: "Fábrica", icon: Factory, role: "factory" },
+    { href: "/analytics", label: "Analíticas", icon: BarChart3 },
   ];
 
   return (
@@ -61,19 +67,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {gameState && (
             <div className="flex items-center gap-4 text-sm font-mono">
               <div className="flex flex-col items-end">
-                <span className="text-muted-foreground text-xs uppercase tracking-wider">Current Day</span>
-                <span className="font-bold text-primary">DAY {gameState.currentDay}</span>
+                <span className="text-muted-foreground text-xs uppercase tracking-wider">Día Actual</span>
+                <span className="font-bold text-primary">DÍA {gameState.currentDay}</span>
               </div>
               <div className="h-8 w-px bg-border hidden sm:block" />
               <div className="flex flex-col items-end hidden sm:flex">
-                <span className="text-muted-foreground text-xs uppercase tracking-wider">Active Turn</span>
+                <span className="text-muted-foreground text-xs uppercase tracking-wider">Turno Activo</span>
                 <span className={cn(
                   "font-bold uppercase",
                   gameState.currentTurnRole === "retailer" ? "text-chart-1" :
                   gameState.currentTurnRole === "wholesaler" ? "text-chart-2" :
                   "text-chart-3"
                 )}>
-                  {gameState.currentTurnRole}
+                  {ROLE_LABELS[gameState.currentTurnRole] ?? gameState.currentTurnRole}
                 </span>
               </div>
             </div>
