@@ -1,0 +1,115 @@
+Quiero desarrollar una aplicación web inspirada en el “Beer Game” (simulación de cadena de suministro), enfocada en logística, stock y administración por turnos.
+
+El sistema debe tener 3 áreas/jugadores:
+
+Minorista
+Mayorista
+Fábrica
+
+Cada área debe tener su propia vista independiente y solo una puede jugar por turno.
+El orden de turnos es:
+
+Minorista → Mayorista → Fábrica → siguiente día.
+
+Cuando un área está jugando:
+
+las demás deben quedar bloqueadas visual y funcionalmente.
+
+La aplicación debe funcionar completamente mediante un sistema de eventos.
+
+Ejemplo de flujo:
+
+Comienza el turno del Minorista.
+Se procesan automáticamente las llegadas de productos pendientes.
+Se descuentan costos correspondientes.
+Aparece un evento indicando la demanda del cliente.
+El jugador acepta/confirma el evento.
+El sistema actualiza stock y dinero.
+Se habilita el formulario para realizar un pedido al Mayorista.
+El jugador finaliza turno.
+Comienza el turno del Mayorista.
+
+Todos los movimientos logísticos deben tener demoras reales:
+
+los pedidos NO llegan instantáneamente,
+deben existir tiempos variables de procesamiento y transporte,
+los productos viajan mediante una cola logística visible.
+
+Ejemplo:
+
+un pedido puede tardar 2 o 3 turnos en llegar.
+
+Cada área debe tener:
+
+Panel de eventos
+lista de eventos pendientes,
+botones o checkboxes para aceptar eventos.
+Panel de control
+stock actual,
+dinero,
+pedidos pendientes,
+backlog,
+productos en tránsito.
+Formularios dinámicos
+Minorista:
+recibe demanda aleatoria diaria,
+realiza pedido al mayorista.
+
+Mayorista:
+
+recibe pedidos del minorista,
+entrega productos,
+realiza pedido a fábrica.
+
+Fábrica:
+
+recibe pedidos del mayorista,
+entrega productos,
+fabrica nuevas unidades.
+Panel de gráficos
+evolución de stock,
+evolución de dinero,
+demanda,
+backlog,
+pedidos realizados.
+
+El sistema debe incluir:
+
+costos de almacenamiento,
+penalizaciones por faltantes,
+historial de eventos,
+sistema de días/turnos,
+actualización dinámica de datos.
+
+Diseño UX/UI:
+
+estilo dashboard industrial/logístico moderno,
+visual limpio y muy entendible,
+cada área debe diferenciarse visualmente por colores y estética:
+Minorista: azul/comercial
+Mayorista: naranja/logística
+Fábrica: rojo oscuro/industrial
+
+Quiero una arquitectura modular y escalable.
+
+Stack preferido:
+
+React o Next.js
+Tailwind
+Backend desacoplado
+Sistema de estados claro
+Código limpio y organizado.
+
+La prioridad es:
+
+claridad del flujo,
+sistema de eventos,
+trazabilidad logística,
+buena UX para entender qué está ocurriendo en cada turno.
+
+Además:
+
+genera componentes reutilizables,
+crea mocks iniciales,
+incluye datos de ejemplo,
+y construye una primera versión funcional navegable desde el inicio.

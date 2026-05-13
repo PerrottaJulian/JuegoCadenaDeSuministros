@@ -3,13 +3,24 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Beer Game Supply Chain Simulation API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: game
+    description: Game state management
+  - name: turns
+    description: Turn-based gameplay
+  - name: orders
+    description: Order management
+  - name: events
+    description: Event management
+  - name: analytics
+    description: Analytics and summaries
+
 paths:
   /healthz:
     get:
@@ -24,6 +35,249 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /game/state:
+    get:
+      operationId: getGameState
+      tags: [game]
+      summary: Get current full game state
+      responses:
+        "200":
+          description: Full game state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameState"
+
+  /game/reset:
+    post:
+      operationId: resetGame
+      tags: [game]
+      summary: Reset game to initial state
+      responses:
+        "200":
+          description: Game reset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameState"
+
+  /game/players/{role}:
+    get:
+      operationId: getPlayerState
+      tags: [game]
+      summary: Get player state for a given role
+      parameters:
+        - name: role
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/PlayerRole"
+      responses:
+        "200":
+          description: Player state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerState"
+
+  /turns/current:
+    get:
+      operationId: getCurrentTurn
+      tags: [turns]
+      summary: Get current turn information
+      responses:
+        "200":
+          description: Current turn info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TurnInfo"
+
+  /turns/advance:
+    post:
+      operationId: advanceTurn
+      tags: [turns]
+      summary: Advance to the next player turn
+      responses:
+        "200":
+          description: Turn advanced
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TurnInfo"
+
+  /turns/process-arrivals:
+    post:
+      operationId: processArrivals
+      tags: [turns]
+      summary: Process incoming shipments for current player
+      parameters:
+        - name: role
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/PlayerRole"
+      responses:
+        "200":
+          description: Arrivals processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArrivalResult"
+
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      summary: List all orders with optional role filter
+      parameters:
+        - name: role
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/PlayerRole"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, in_transit, delivered]
+      responses:
+        "200":
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+
+    post:
+      operationId: placeOrder
+      tags: [orders]
+      summary: Place a new order from one player to the next supplier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderInput"
+      responses:
+        "201":
+          description: Order placed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders/{id}/fulfill:
+    post:
+      operationId: fulfillOrder
+      tags: [orders]
+      summary: Mark an order as fulfilled by the supplier
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Order fulfilled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /events:
+    get:
+      operationId: listEvents
+      tags: [events]
+      summary: List events for a player role
+      parameters:
+        - name: role
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/PlayerRole"
+        - name: acknowledged
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GameEvent"
+
+  /events/{id}/acknowledge:
+    post:
+      operationId: acknowledgeEvent
+      tags: [events]
+      summary: Acknowledge (accept) a pending event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Event acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameEvent"
+
+  /analytics/summary:
+    get:
+      operationId: getAnalyticsSummary
+      tags: [analytics]
+      summary: Get game-wide analytics summary (stocks, costs, backlogs)
+      responses:
+        "200":
+          description: Analytics summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsSummary"
+
+  /analytics/history:
+    get:
+      operationId: getHistoryData
+      tags: [analytics]
+      summary: Get per-turn historical data for charts
+      responses:
+        "200":
+          description: Historical data per turn
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TurnSnapshot"
+
+  /analytics/transit:
+    get:
+      operationId: getTransitQueue
+      tags: [analytics]
+      summary: Get all in-transit shipments (logistics pipeline)
+      responses:
+        "200":
+          description: In-transit orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TransitItem"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +288,203 @@ components:
       required:
         - status
 
+    PlayerRole:
+      type: string
+      enum: [retailer, wholesaler, factory]
+
+    PlayerState:
+      type: object
+      required: [role, stock, money, backlog, pendingOrders, totalHoldingCost, totalStockoutCost]
+      properties:
+        role:
+          $ref: "#/components/schemas/PlayerRole"
+        stock:
+          type: integer
+        money:
+          type: number
+        backlog:
+          type: integer
+        pendingOrders:
+          type: integer
+        totalHoldingCost:
+          type: number
+        totalStockoutCost:
+          type: number
+
+    GameState:
+      type: object
+      required: [currentDay, currentTurnRole, turnPhase, players, isGameOver]
+      properties:
+        currentDay:
+          type: integer
+        currentTurnRole:
+          $ref: "#/components/schemas/PlayerRole"
+        turnPhase:
+          type: string
+          enum: [arrivals, events, order, done]
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerState"
+        isGameOver:
+          type: boolean
+        winnerRole:
+          type: ["string", "null"]
+
+    TurnInfo:
+      type: object
+      required: [currentDay, currentTurnRole, turnPhase, turnOrder]
+      properties:
+        currentDay:
+          type: integer
+        currentTurnRole:
+          $ref: "#/components/schemas/PlayerRole"
+        turnPhase:
+          type: string
+          enum: [arrivals, events, order, done]
+        turnOrder:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerRole"
+
+    Order:
+      type: object
+      required: [id, fromRole, toRole, quantity, status, createdAtDay, estimatedArrivalDay]
+      properties:
+        id:
+          type: integer
+        fromRole:
+          $ref: "#/components/schemas/PlayerRole"
+        toRole:
+          $ref: "#/components/schemas/PlayerRole"
+        quantity:
+          type: integer
+        status:
+          type: string
+          enum: [pending, in_transit, delivered]
+        createdAtDay:
+          type: integer
+        estimatedArrivalDay:
+          type: integer
+        deliveredAtDay:
+          type: ["integer", "null"]
+
+    OrderInput:
+      type: object
+      required: [fromRole, quantity]
+      properties:
+        fromRole:
+          $ref: "#/components/schemas/PlayerRole"
+        quantity:
+          type: integer
+          minimum: 0
+
+    GameEvent:
+      type: object
+      required: [id, role, type, message, day, acknowledged]
+      properties:
+        id:
+          type: integer
+        role:
+          $ref: "#/components/schemas/PlayerRole"
+        type:
+          type: string
+          enum: [demand, arrival, cost, stockout, info, order_received]
+        message:
+          type: string
+        day:
+          type: integer
+        acknowledged:
+          type: boolean
+        data:
+          type: object
+          additionalProperties: true
+
+    ArrivalResult:
+      type: object
+      required: [arrivedQuantity, newStock, holdingCostCharged, events]
+      properties:
+        arrivedQuantity:
+          type: integer
+        newStock:
+          type: integer
+        holdingCostCharged:
+          type: number
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/GameEvent"
+
+    AnalyticsSummary:
+      type: object
+      required: [totalDays, retailer, wholesaler, factory]
+      properties:
+        totalDays:
+          type: integer
+        retailer:
+          $ref: "#/components/schemas/PlayerSummary"
+        wholesaler:
+          $ref: "#/components/schemas/PlayerSummary"
+        factory:
+          $ref: "#/components/schemas/PlayerSummary"
+
+    PlayerSummary:
+      type: object
+      required: [stock, money, backlog, totalHoldingCost, totalStockoutCost]
+      properties:
+        stock:
+          type: integer
+        money:
+          type: number
+        backlog:
+          type: integer
+        totalHoldingCost:
+          type: number
+        totalStockoutCost:
+          type: number
+
+    TurnSnapshot:
+      type: object
+      required: [day, retailerStock, wholesalerStock, factoryStock, retailerMoney, wholesalerMoney, factoryMoney, retailerBacklog, wholesalerBacklog, factoryBacklog, demand]
+      properties:
+        day:
+          type: integer
+        retailerStock:
+          type: integer
+        wholesalerStock:
+          type: integer
+        factoryStock:
+          type: integer
+        retailerMoney:
+          type: number
+        wholesalerMoney:
+          type: number
+        factoryMoney:
+          type: number
+        retailerBacklog:
+          type: integer
+        wholesalerBacklog:
+          type: integer
+        factoryBacklog:
+          type: integer
+        demand:
+          type: integer
+
+    TransitItem:
+      type: object
+      required: [orderId, fromRole, toRole, quantity, createdAtDay, estimatedArrivalDay, turnsRemaining]
+      properties:
+        orderId:
+          type: integer
+        fromRole:
+          $ref: "#/components/schemas/PlayerRole"
+        toRole:
+          $ref: "#/components/schemas/PlayerRole"
+        quantity:
+          type: integer
+        createdAtDay:
+          type: integer
+        estimatedArrivalDay:
+          type: integer
+        turnsRemaining:
+          type: integer

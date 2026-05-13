@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Beer Game — Supply Chain Simulation"
+version = "1.0.0"
+id = "artifacts/beer-game"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24044
+
+[services.development]
+run = "pnpm --filter @workspace/beer-game run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/beer-game", "run", "build" ]
+publicDir = "artifacts/beer-game/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24044"
+BASE_PATH = "/"
