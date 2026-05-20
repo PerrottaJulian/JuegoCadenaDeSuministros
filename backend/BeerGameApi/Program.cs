@@ -1,41 +1,59 @@
+using System.Text.Json;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Configure CORS for the frontend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+// ----------------------------------------------------
+// MOCKED ENDPOINTS PARA PRUEBAS DE CONEXIÓN FRONTEND
+// ----------------------------------------------------
 
-app.MapGet("/weatherforecast", () =>
+app.MapGet("/api/game/state", () =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
+    // Retornamos un objeto de prueba simulando el estado inicial del juego
+    var state = new
+    {
+        currentDay = 1,
+        currentTurnRole = "retailer",
+        turnPhase = "arrivals",
+        isGameOver = false,
+        winnerRole = (string?)null,
+        players = new[]
+        {
+            new { role = "retailer", stock = 15, money = 1200, backlog = 0, totalHoldingCost = 0, totalStockoutCost = 0 },
+            new { role = "wholesaler", stock = 30, money = 2000, backlog = 0, totalHoldingCost = 0, totalStockoutCost = 0 },
+            new { role = "factory", stock = 100, money = 5000, backlog = 0, totalHoldingCost = 0, totalStockoutCost = 0 }
+        }
+    };
+    
+    return Results.Ok(state);
 })
-.WithName("GetWeatherForecast");
+.WithName("GetGameState");
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
