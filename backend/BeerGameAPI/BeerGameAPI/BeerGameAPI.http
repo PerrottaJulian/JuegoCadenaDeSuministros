@@ -1,0 +1,66 @@
+@BeerGameAPI_HostAddress = http://localhost:5219
+
+### Health check
+GET {{BeerGameAPI_HostAddress}}/api/healthz
+Accept: application/json
+
+### Get game state
+GET {{BeerGameAPI_HostAddress}}/api/game/state
+Accept: application/json
+
+### Reset game
+POST {{BeerGameAPI_HostAddress}}/api/game/reset
+Accept: application/json
+
+### Get player state
+GET {{BeerGameAPI_HostAddress}}/api/game/players/retailer
+Accept: application/json
+
+### Get current turn
+GET {{BeerGameAPI_HostAddress}}/api/turns/current
+Accept: application/json
+
+### Process arrivals
+POST {{BeerGameAPI_HostAddress}}/api/turns/process-arrivals?role=retailer
+Accept: application/json
+
+### Advance turn
+POST {{BeerGameAPI_HostAddress}}/api/turns/advance
+Accept: application/json
+
+### Place order
+POST {{BeerGameAPI_HostAddress}}/api/orders
+Content-Type: application/json
+
+{
+  "fromRole": "retailer",
+  "quantity": 4
+}
+
+### List orders
+GET {{BeerGameAPI_HostAddress}}/api/orders
+Accept: application/json
+
+### Fulfill order
+POST {{BeerGameAPI_HostAddress}}/api/orders/1/fulfill
+Accept: application/json
+
+### List events
+GET {{BeerGameAPI_HostAddress}}/api/events
+Accept: application/json
+
+### Acknowledge event
+POST {{BeerGameAPI_HostAddress}}/api/events/1/acknowledge
+Accept: application/json
+
+### Analytics summary
+GET {{BeerGameAPI_HostAddress}}/api/analytics/summary
+Accept: application/json
+
+### Analytics history
+GET {{BeerGameAPI_HostAddress}}/api/analytics/history
+Accept: application/json
+
+### Transit queue
+GET {{BeerGameAPI_HostAddress}}/api/analytics/transit
+Accept: application/json

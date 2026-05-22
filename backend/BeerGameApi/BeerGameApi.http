@@ -1,6 +1,0 @@
-@BeerGameApi_HostAddress = http://localhost:5141
-
-GET {{BeerGameApi_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
