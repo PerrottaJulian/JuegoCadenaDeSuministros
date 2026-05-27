@@ -1,4 +1,3 @@
-import { useRoute } from "wouter";
 import { 
   useGetPlayerState, 
   useGetGameState, 
@@ -8,12 +7,15 @@ import {
   useProcessArrivals,
   useAdvanceTurn,
   usePlaceOrder,
+  useListOrders,
+  useFulfillOrder,
   getGetPlayerStateQueryKey,
   getGetGameStateQueryKey,
   getListEventsQueryKey,
   getGetTransitQueueQueryKey,
+  getListOrdersQueryKey,
   PlayerRole,
-  GameStateTurnPhase
+  OrderStatus
 } from "@/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -23,7 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Lock, Package, DollarSign, AlertCircle, Clock, CheckCircle2, TrendingDown, TrendingUp, Info, Truck } from "lucide-react";
+import { Lock, Package, AlertCircle, CheckCircle2, Info, Truck } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
   retailer: "Minorista",
@@ -36,6 +38,13 @@ const PHASE_LABELS: Record<string, string> = {
   events: "Eventos",
   order: "Pedido",
   done: "Listo",
+};
+
+const NEXT_PHASE_LABELS: Record<string, string> = {
+  arrivals: "Eventos",
+  events: "Pedido",
+  order: "Finalizar",
+  done: "Turno",
 };
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -71,14 +80,17 @@ export default function PlayerDashboard({ role }: { role: PlayerRole }) {
   const processArrivals = useProcessArrivals();
   const advanceTurn = useAdvanceTurn();
   const placeOrder = usePlaceOrder();
+  const fulfillOrder = useFulfillOrder();
+
+  const { data: pendingOrders } = useListOrders(
+    { role, status: "pending" as OrderStatus },
+    { query: { enabled: !!role, queryKey: getListOrdersQueryKey({ role, status: "pending" as any }), refetchInterval: 2000 } }
+  );
+
+  const ordersToFulfill = pendingOrders?.filter(o => o.toRole === role && o.status === "pending") || [];
 
   const isMyTurn = gameState?.currentTurnRole === role;
   const isLocked = !isMyTurn;
-
-  const roleColorTheme = 
-    role === "retailer" ? "chart-1" : 
-    role === "wholesaler" ? "chart-2" : 
-    "chart-3";
 
   const handleAcknowledge = (id: number) => {
     acknowledgeEvent.mutate({ id }, {
@@ -102,6 +114,22 @@ export default function PlayerDashboard({ role }: { role: PlayerRole }) {
     advanceTurn.mutate(undefined, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetGameStateQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetPlayerStateQueryKey(role) });
+        queryClient.invalidateQueries({ queryKey: getListEventsQueryKey({ role }) });
+        queryClient.invalidateQueries({ queryKey: getGetTransitQueueQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey({ role, status: "pending" as any }) });
+      }
+    });
+  };
+
+  const handleFulfillOrder = (orderId: number) => {
+    fulfillOrder.mutate({ id: orderId }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetPlayerStateQueryKey(role) });
+        queryClient.invalidateQueries({ queryKey: getGetGameStateQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetTransitQueueQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey({ role, status: "pending" as any }) });
+        queryClient.invalidateQueries({ queryKey: getListEventsQueryKey({ role }) });
       }
     });
   };
@@ -113,12 +141,15 @@ export default function PlayerDashboard({ role }: { role: PlayerRole }) {
         setOrderQuantity("0");
         queryClient.invalidateQueries({ queryKey: getGetPlayerStateQueryKey(role) });
         queryClient.invalidateQueries({ queryKey: getGetGameStateQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListEventsQueryKey({ role }) });
+        queryClient.invalidateQueries({ queryKey: getGetTransitQueueQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey({ role, status: "pending" as any }) });
       }
     });
   };
 
   const pendingEvents = events?.filter(e => !e.acknowledged) || [];
-  const historyEvents = events?.filter(e => e.acknowledged).slice(0, 10) || [];
+  const historyEvents = events?.filter(e => e.acknowledged).slice(-10) || [];
   const myTransitQueue = transitQueue?.filter(t => t.toRole === role) || [];
   const myOutboundOrders = transitQueue?.filter(t => t.fromRole === role) || [];
 
@@ -129,9 +160,21 @@ export default function PlayerDashboard({ role }: { role: PlayerRole }) {
       
       {isLocked && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-xl">
-          <div className={`flex flex-col items-center p-8 bg-card border border-${roleColorTheme} rounded-lg shadow-2xl max-w-md text-center`}>
-            <Lock className={`h-16 w-16 text-${roleColorTheme} mb-4`} />
-            <h2 className={`text-2xl font-bold text-${roleColorTheme} uppercase tracking-widest mb-2`}>
+          <div className={cn("flex flex-col items-center p-8 bg-card rounded-lg shadow-2xl max-w-md text-center",
+              role === "retailer" && "border-chart-1",
+              role === "wholesaler" && "border-chart-2",
+              role === "factory" && "border-chart-3"
+            )}>
+            <Lock className={cn("h-16 w-16 mb-4",
+              role === "retailer" && "text-chart-1",
+              role === "wholesaler" && "text-chart-2",
+              role === "factory" && "text-chart-3"
+            )} />
+            <h2 className={cn("text-2xl font-bold uppercase tracking-widest mb-2",
+              role === "retailer" && "text-chart-1",
+              role === "wholesaler" && "text-chart-2",
+              role === "factory" && "text-chart-3"
+            )}>
               Terminal Bloqueada
             </h2>
             <p className="text-muted-foreground">
@@ -147,13 +190,25 @@ export default function PlayerDashboard({ role }: { role: PlayerRole }) {
       )}
 
       {/* Encabezado */}
-      <div className={`border-b-4 border-${roleColorTheme} pb-6 flex flex-col md:flex-row md:items-end justify-between gap-4`}>
+      <div className={cn("border-b-4 pb-6 flex flex-col md:flex-row md:items-end justify-between gap-4",
+          role === "retailer" && "border-chart-1",
+          role === "wholesaler" && "border-chart-2",
+          role === "factory" && "border-chart-3"
+        )}>
         <div>
-          <h1 className={`text-4xl font-bold text-${roleColorTheme} uppercase tracking-tighter`}>
+          <h1 className={cn("text-4xl font-bold uppercase tracking-tighter",
+              role === "retailer" && "text-chart-1",
+              role === "wholesaler" && "text-chart-2",
+              role === "factory" && "text-chart-3"
+            )}>
             {ROLE_LABELS[role] ?? role} <span className="text-muted-foreground font-light text-2xl">TERMINAL</span>
           </h1>
           <div className="flex gap-4 mt-2">
-            <Badge variant="outline" className={`border-${roleColorTheme}/50 text-${roleColorTheme}`}>
+            <Badge variant="outline" className={cn(
+              role === "retailer" && "border-chart-1/50 text-chart-1",
+              role === "wholesaler" && "border-chart-2/50 text-chart-2",
+              role === "factory" && "border-chart-3/50 text-chart-3"
+            )}>
               DÍA {gameState.currentDay}
             </Badge>
             <Badge variant="outline" className="border-muted text-muted-foreground">
@@ -166,7 +221,11 @@ export default function PlayerDashboard({ role }: { role: PlayerRole }) {
         <div className="flex gap-3">
           <Button
             variant={gameState.turnPhase === "arrivals" ? "default" : "secondary"}
-            className={cn("font-bold uppercase tracking-wider", gameState.turnPhase === "arrivals" && `bg-${roleColorTheme} text-${roleColorTheme}-foreground hover:bg-${roleColorTheme}/90`)}
+            className={cn("font-bold uppercase tracking-wider",
+              gameState.turnPhase === "arrivals" && role === "retailer" && "bg-chart-1 text-white hover:bg-chart-1/90",
+              gameState.turnPhase === "arrivals" && role === "wholesaler" && "bg-chart-2 text-white hover:bg-chart-2/90",
+              gameState.turnPhase === "arrivals" && role === "factory" && "bg-chart-3 text-white hover:bg-chart-3/90"
+            )}
             disabled={!isMyTurn || gameState.turnPhase !== "arrivals"}
             onClick={handleProcessArrivals}
             data-testid="button-process-arrivals"
@@ -176,14 +235,18 @@ export default function PlayerDashboard({ role }: { role: PlayerRole }) {
           </Button>
           
           <Button
-            variant={gameState.turnPhase === "done" ? "default" : "secondary"}
-            className={cn("font-bold uppercase tracking-wider", gameState.turnPhase === "done" && `bg-${roleColorTheme} text-${roleColorTheme}-foreground hover:bg-${roleColorTheme}/90`)}
-            disabled={!isMyTurn || gameState.turnPhase !== "done"}
+            variant="default"
+            className={cn("font-bold uppercase tracking-wider",
+              role === "retailer" && "bg-chart-1 text-white hover:bg-chart-1/90",
+              role === "wholesaler" && "bg-chart-2 text-white hover:bg-chart-2/90",
+              role === "factory" && "bg-chart-3 text-white hover:bg-chart-3/90"
+            )}
+            disabled={!isMyTurn}
             onClick={handleAdvanceTurn}
             data-testid="button-advance-turn"
           >
             <CheckCircle2 className="mr-2 h-4 w-4" />
-            Finalizar Turno
+            {gameState.turnPhase === "done" ? "Finalizar Turno" : `Siguiente → ${NEXT_PHASE_LABELS[gameState.turnPhase]}`}
           </Button>
         </div>
       </div>
@@ -207,7 +270,7 @@ export default function PlayerDashboard({ role }: { role: PlayerRole }) {
               </div>
               <div className="bg-card p-4 flex flex-col">
                 <span className="text-xs text-muted-foreground uppercase">Capital</span>
-                <span className="text-3xl font-bold mt-1 text-emerald-500">${playerState.money}</span>
+                <span className="text-3xl font-bold mt-1 text-chart-4">${playerState.money}</span>
               </div>
               <div className="bg-card p-4 flex flex-col">
                 <span className="text-xs text-muted-foreground uppercase">Pedidos Pendientes</span>
@@ -215,16 +278,62 @@ export default function PlayerDashboard({ role }: { role: PlayerRole }) {
               </div>
               <div className="bg-card p-4 flex flex-col">
                 <span className="text-xs text-muted-foreground uppercase">Costos Totales</span>
-                <span className="text-3xl font-bold mt-1 text-orange-500">${playerState.totalHoldingCost + playerState.totalStockoutCost}</span>
+                <span className="text-3xl font-bold mt-1 text-chart-2">${playerState.totalHoldingCost + playerState.totalStockoutCost}</span>
               </div>
             </CardContent>
           </Card>
 
-          {/* Formulario de pedido */}
-          <Card className={cn("border-2 transition-all", 
-            gameState.turnPhase === "order" && isMyTurn ? `border-${roleColorTheme} shadow-[0_0_15px_rgba(var(--${roleColorTheme}),0.2)]` : "border-border/50"
+          {/* Pedidos por despachar (fulfill) */}
+          <Card className="border-border/50 shadow-md">
+            <CardHeader className="bg-card/50 pb-4 border-b border-border/50">
+              <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <Package className="h-4 w-4" /> Pedidos por Despachar
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              {ordersToFulfill.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic text-center py-4">Sin pedidos pendientes</p>
+              ) : (
+                <div className="space-y-3">
+                  {ordersToFulfill.map(order => (
+                    <div key={order.id} className="flex items-center justify-between p-3 bg-secondary/30 rounded">
+                      <div>
+                        <span className="text-sm font-bold">{order.quantity} uds.</span>
+                        <span className="text-xs text-muted-foreground ml-2">
+                          de {ROLE_LABELS[order.fromRole] ?? order.fromRole}
+                        </span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className={cn("uppercase text-xs text-white",
+                          role === "retailer" && "bg-chart-1 hover:bg-chart-1/90",
+                          role === "wholesaler" && "bg-chart-2 hover:bg-chart-2/90",
+                          role === "factory" && "bg-chart-3 hover:bg-chart-3/90"
+                        )}
+                        disabled={!isMyTurn || fulfillOrder.isPending}
+                        onClick={() => handleFulfillOrder(order.id)}
+                      >
+                        Despachar
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Formulario de pedido (oculto para fábrica) */}
+          {role !== "factory" && <Card className={cn("border-2 transition-all",
+            gameState.turnPhase === "order" && isMyTurn && role === "retailer" && "border-chart-1 shadow-[0_0_15px_hsla(221,83%,53%,0.2)]",
+            gameState.turnPhase === "order" && isMyTurn && role === "wholesaler" && "border-chart-2 shadow-[0_0_15px_hsla(24,93%,50%,0.2)]",
+            !(gameState.turnPhase === "order" && isMyTurn) && "border-border/50"
           )}>
-            <CardHeader className={cn("pb-4", gameState.turnPhase === "order" && isMyTurn ? `bg-${roleColorTheme}/10` : "bg-card/50")}>
+            <CardHeader className={cn("pb-4",
+              gameState.turnPhase === "order" && isMyTurn && role === "retailer" && "bg-chart-1/10",
+              gameState.turnPhase === "order" && isMyTurn && role === "wholesaler" && "bg-chart-2/10",
+              !(gameState.turnPhase === "order" && isMyTurn) && "bg-card/50"
+            )}>
               <CardTitle className="text-sm uppercase tracking-wider flex items-center gap-2">
                 <Package className="h-4 w-4" /> Orden de Suministro
               </CardTitle>
@@ -247,7 +356,10 @@ export default function PlayerDashboard({ role }: { role: PlayerRole }) {
                     <Button 
                       type="submit" 
                       disabled={!isMyTurn || gameState.turnPhase !== "order" || placeOrder.isPending}
-                      className={cn("w-32 uppercase tracking-wider", isMyTurn && gameState.turnPhase === "order" && `bg-${roleColorTheme} text-${roleColorTheme}-foreground hover:bg-${roleColorTheme}/90`)}
+                      className={cn("w-32 uppercase tracking-wider text-white",
+                        isMyTurn && gameState.turnPhase === "order" && role === "retailer" && "bg-chart-1 hover:bg-chart-1/90",
+                        isMyTurn && gameState.turnPhase === "order" && role === "wholesaler" && "bg-chart-2 hover:bg-chart-2/90"
+                      )}
                       data-testid="button-place-order"
                     >
                       Emitir OC
@@ -256,7 +368,7 @@ export default function PlayerDashboard({ role }: { role: PlayerRole }) {
                 </div>
               </form>
             </CardContent>
-          </Card>
+          </Card>}
         </div>
 
         {/* Columna central: Registro de eventos */}
@@ -388,21 +500,14 @@ export default function PlayerDashboard({ role }: { role: PlayerRole }) {
 function EventBadge({ type }: { type: string }) {
   const getStyle = () => {
     switch(type) {
-      case 'demand': return 'bg-blue-500/20 text-blue-400 border-blue-500/50';
-      case 'arrival': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50';
-      case 'cost': return 'bg-orange-500/20 text-orange-400 border-orange-500/50';
-      case 'stockout': return 'bg-red-500/20 text-red-400 border-red-500/50';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/50';
+      case 'demand': return 'bg-chart-1/20 text-chart-1 border-chart-1/50';
+      case 'arrival': return 'bg-chart-4/20 text-chart-4 border-chart-4/50';
+      case 'cost': return 'bg-chart-2/20 text-chart-2 border-chart-2/50';
+      case 'stockout': return 'bg-destructive/20 text-destructive border-destructive/50';
+      case 'info': return 'bg-muted text-muted-foreground border-muted';
+      case 'order_received': return 'bg-primary/20 text-primary border-primary/50';
+      default: return 'bg-muted text-muted-foreground border-border';
     }
-  };
-
-  const EVENT_TYPE_LABELS: Record<string, string> = {
-    demand: "Demanda",
-    arrival: "Llegada",
-    cost: "Costo",
-    stockout: "Faltante",
-    info: "Info",
-    order_received: "Pedido recibido",
   };
 
   return (

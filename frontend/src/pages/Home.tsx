@@ -1,7 +1,7 @@
 import { useGetGameState, useResetGame, getGetGameStateQueryKey } from "@/api-client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Package, Truck, Factory, RotateCcw, AlertTriangle, CheckCircle2, TrendingUp, DollarSign } from "lucide-react";
+import { Package, Truck, Factory, RotateCcw, AlertTriangle, TrendingUp } from "lucide-react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -87,7 +87,7 @@ export default function Home() {
         <div className="bg-primary/20 border border-primary p-6 rounded-lg text-center font-mono">
           <h2 className="text-2xl font-bold text-primary mb-2">SIMULACIÓN COMPLETADA</h2>
           <p className="text-muted-foreground">
-            Ganador: <span className={getRoleColor(gameState.winnerRole || '')}>{ROLE_LABELS[gameState.winnerRole ?? ''] ?? gameState.winnerRole?.toUpperCase()}</span>
+            Ganador: <span className={getRoleColor(gameState.winnerRole || '')}>{gameState.winnerRole ? ROLE_LABELS[gameState.winnerRole] ?? gameState.winnerRole.toUpperCase() : "—"}</span>
           </p>
         </div>
       )}
@@ -95,7 +95,7 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {gameState.players.map((player) => (
           <Card key={player.role} className={cn("border-2 relative overflow-hidden", 
-            gameState.currentTurnRole === player.role ? "border-primary shadow-[0_0_15px_rgba(var(--primary),0.3)]" : "border-border/50"
+            gameState.currentTurnRole === player.role ? "border-primary shadow-[0_0_15px_hsla(var(--primary),0.3)]" : "border-border/50"
           )}>
             {gameState.currentTurnRole === player.role && (
               <div className="absolute top-0 left-0 w-full h-1 bg-primary animate-pulse" />
@@ -124,7 +124,7 @@ export default function Home() {
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground font-mono uppercase">Capital</p>
-                  <p className="text-2xl font-mono font-medium text-emerald-500">
+                  <p className="text-2xl font-mono font-medium text-chart-4">
                     ${player.money}
                   </p>
                 </div>

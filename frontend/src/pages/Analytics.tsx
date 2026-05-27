@@ -1,8 +1,9 @@
 import { useGetHistoryData, useGetAnalyticsSummary, useGetTransitQueue, getGetHistoryDataQueryKey, getGetAnalyticsSummaryQueryKey, getGetTransitQueueQueryKey } from "@/api-client";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Package, Truck, Factory, TrendingUp, AlertTriangle } from "lucide-react";
+import { Package, Truck, Factory } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
   retailer: "Minorista",
@@ -86,7 +87,7 @@ export default function Analytics() {
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase">Costo de Almacenamiento</p>
-                <p className="text-lg font-bold text-orange-400">${data.totalHoldingCost}</p>
+                <p className="text-lg font-bold text-chart-2">${data.totalHoldingCost}</p>
               </div>
             </CardContent>
           </Card>
@@ -193,9 +194,9 @@ export default function Analytics() {
                         <TableCell className="text-right font-mono font-bold">{item.quantity}</TableCell>
                         <TableCell className="text-right font-mono text-muted-foreground">Día {item.estimatedArrivalDay}</TableCell>
                         <TableCell className="text-right font-mono">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                            item.turnsRemaining === 1 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-secondary text-foreground'
-                          }`}>
+                          <span className={cn("inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
+                            item.turnsRemaining === 1 ? "bg-chart-4/20 text-chart-4" : "bg-secondary text-foreground"
+                          )}>
                             {item.turnsRemaining}
                           </span>
                         </TableCell>

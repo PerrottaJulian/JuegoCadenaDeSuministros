@@ -204,8 +204,6 @@ public class GameService
         }
         else if (_turnPhase == TurnPhase.done)
         {
-            ChargeCosts();
-
             var currentIdx = TurnOrder.IndexOf(_currentTurnRole);
             var nextIdx = (currentIdx + 1) % TurnOrder.Count;
             _currentTurnRole = TurnOrder[nextIdx];
@@ -362,23 +360,6 @@ public class GameService
                 TurnsRemaining = Math.Max(0, o.EstimatedArrivalDay - _currentDay)
             })
             .ToList();
-    }
-
-    private void ChargeCosts()
-    {
-        foreach (var player in _players.Values)
-        {
-            var holdingCost = player.Stock * HoldingCostPerUnit;
-            player.Money -= holdingCost;
-            player.TotalHoldingCost += holdingCost;
-
-            if (player.Backlog > 0)
-            {
-                var stockoutCost = player.Backlog * StockoutCostPerUnit;
-                player.Money -= stockoutCost;
-                player.TotalStockoutCost += stockoutCost;
-            }
-        }
     }
 
     private void TakeSnapshot()
